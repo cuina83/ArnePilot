@@ -3,7 +3,7 @@ const int TOYOTA_MAX_TORQUE = 1500;       // max torque cmd allowed ever
 
 // rate based torque limit + stay within actually applied
 // packet is sent at 100hz, so this limit is 1000/sec
-const int TOYOTA_MAX_RATE_UP = 10;        // ramp up slow
+const int TOYOTA_MAX_RATE_UP = 15;        // ramp up slow
 const int TOYOTA_MAX_RATE_DOWN = 44;      // ramp down fast
 const int TOYOTA_MAX_TORQUE_ERROR = 500;  // max torque cmd in excess of torque motor
 
@@ -28,13 +28,13 @@ const int TOYOTA_STANDSTILL_THRSLD = 100;  // 1kph
 // In this safety: ((gas1 + gas2)/2) > THRESHOLD
 const int TOYOTA_GAS_INTERCEPTOR_THRSLD = 845;
 #define TOYOTA_GET_INTERCEPTOR(msg) (((GET_BYTE((msg), 0) << 8) + GET_BYTE((msg), 1) + (GET_BYTE((msg), 2) << 8) + GET_BYTE((msg), 3)) / 2) // avg between 2 tracks
-
-const CanMsg TOYOTA_TX_MSGS[] = {{0x283, 0, 7}, {0x2E6, 0, 8}, {0x2E7, 0, 8}, {0x33E, 0, 7}, {0x344, 0, 8}, {0x365, 0, 7}, {0x366, 0, 7}, {0x4CB, 0, 8},  // DSU bus 0
-                                  {0x128, 1, 6}, {0x141, 1, 4}, {0x160, 1, 8}, {0x161, 1, 7}, {0x470, 1, 4},  // DSU bus 1
-                                  {0x367, 0, 2}, {0x414, 0, 8}, {0x489, 0, 8}, {0x48a, 0, 8}, {0x48b, 0, 8}, {0x4d3, 0, 8}, // CAM bus 0
-                                  {0x130, 1, 7}, {0x240, 1, 7}, {0x241, 1, 7}, {0x244, 1, 7}, {0x245, 1, 7}, {0x248, 1, 7}, {0x466, 1, 3}, // CAM bus 1
-                                  {0x2E4, 0, 5}, {0x411, 0, 8}, {0x412, 0, 8}, {0x343, 0, 8}, {0x1D2, 0, 8},  // LKAS + ACC
-                                  {0x200, 0, 6}, {0x750, 0, 8}};  // interceptor + BSM
+const CanMsg TOYOTA_TX_MSGS[] = {{0x283, 0, 7}};
+// const CanMsg TOYOTA_TX_MSGS[] = {{0x283, 0, 7}, {0x2E6, 0, 8}, {0x2E7, 0, 8}, {0x33E, 0, 7}, {0x344, 0, 8}, {0x365, 0, 7}, {0x366, 0, 7}, {0x4CB, 0, 8},  // DSU bus 0
+//                                  {0x128, 1, 6}, {0x141, 1, 4}, {0x160, 1, 8}, {0x161, 1, 7}, {0x470, 1, 4},  // DSU bus 1
+//                                  {0x367, 0, 2}, {0x414, 0, 8}, {0x489, 0, 8}, {0x48a, 0, 8}, {0x48b, 0, 8}, {0x4d3, 0, 8}, // CAM bus 0
+//                                  {0x130, 1, 7}, {0x240, 1, 7}, {0x241, 1, 7}, {0x244, 1, 7}, {0x245, 1, 7}, {0x248, 1, 7}, {0x466, 1, 3}, // CAM bus 1
+//                                  {0x2E4, 0, 5}, {0x411, 0, 8}, {0x412, 0, 8}, {0x343, 0, 8}, {0x1D2, 0, 8},  // LKAS + ACC
+//                                  {0x200, 0, 6}, {0x750, 0, 8}};  // interceptor + BSM
 
 AddrCheckStruct toyota_rx_checks[] = {
   {.msg = {{ 0xaa, 0, 8, .check_checksum = false, .expected_timestep = 12000U}}},
@@ -261,10 +261,10 @@ static int toyota_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
       int addr = GET_ADDR(to_fwd);
       // block stock lkas messages and stock acc messages (if OP is doing ACC)
       // in TSS2, 0x191 is LTA which we need to block to avoid controls collision
-      int is_lkas_msg = ((addr == 0x2E4) || (addr == 0x412) || (addr == 0x191));
+      int is_lkas_msg = ((addr == 0x2E4) || (addr == 0x191)); // (addr == 0x412) || 
       // in TSS2 the camera does ACC as well, so filter 0x343
-      int is_acc_msg = (addr == 0x343);
-      int block_msg = is_lkas_msg || is_acc_msg;
+      //int is_acc_msg = (addr == 0x343);
+      int block_msg = is_lkas_msg; // || is_acc_msg;
       if (!block_msg) {
         bus_fwd = 0;
       }
